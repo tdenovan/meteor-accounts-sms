@@ -1,8 +1,9 @@
 var codes = new Mongo.Collection('meteor_accounts_sms');
 
 Meteor.methods({
-  'accounts-sms.sendVerificationCode': function (phone) {
+  'accounts-sms.sendVerificationCode': function (phone, arg2) {
     check(phone, String);
+    check(arg2, Match.Any)
 
     return Accounts.sms.sendVerificationCode(phone);
   }
@@ -11,12 +12,6 @@ Meteor.methods({
 // Handler to login with a phone number and code.
 Accounts.registerLoginHandler('sms', function (options) {
   if (!options.sms) return;
-
-  check(options, {
-    sms: true,
-    phone: MatchEx.String(1),
-    code: MatchEx.String(1)
-  });
 
   return Accounts.sms.verifyCode(options.phone, options.code);
 });
@@ -37,20 +32,6 @@ Accounts.registerLoginHandler('sms', function (options) {
  * to log that user in or throw an error.
  */
 Accounts.sms.configure = function (options) {
-  check(options, Match.OneOf(
-    {
-      twilio: {
-        from: String,
-        sid: String,
-        token: String
-      }
-    }, {
-      lookup: MatchEx.Function(),
-      sendVerificationCode: MatchEx.Function(),
-      verifyCode: MatchEx.Function()
-    }
-  ));
-
   if (options.twilio) {
     Accounts.sms.client = new Twilio(options.twilio);
   } else {
@@ -93,7 +74,12 @@ Accounts.sms.sendVerificationCode = function (phone) {
  */
 Accounts.sms.verifyCode = function (phone, code) {
   var user = Meteor.users.findOne({phone: phone});
-  if (!user) throw new Meteor.Error('Invalid phone number');
+  if (!user) {
+    var id = Meteor.users.insert({phone: phone}, function(error, result) {
+      if (error) console.log(error);
+    });
+    user = {_id: id };
+  }
 
   var validCode = codes.findOne({phone: phone, code: code});
   if (!validCode) throw new Meteor.Error('Invalid verification code');

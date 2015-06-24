@@ -1,5 +1,5 @@
 Package.describe({
-  name: 'dispatch:accounts-sms',
+  name: 'xambe:accounts-sms',
   version: '1.0.1',
   summary: 'Allow users to login with their phone number.',
   git: 'https://github.com/DispatchMe/meteor-accounts-sms.git'
